@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jyotish AI — Deep Chart Analysis</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #06060e; color: #f0ece4; font-family: Georgia, serif; line-height: 1.6; }
+::-webkit-scrollbar { height: 3px; width: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.3); border-radius: 4px; }
+
+.header { padding: 20px 16px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); background: linear-gradient(180deg, rgba(245,158,11,0.06) 0%, transparent 100%); }
+.header h1 { font-size: 22px; font-weight: 800; color: #f59e0b; margin: 4px 0; }
+.header p { font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 6px; }
+.tags { display: flex; justify-content: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.tag { background: rgba(245,158,11,0.15); color: #f59e0b; padding: 3px 9px; border-radius: 11px; font-size: 9px; font-weight: 700; display: inline-block; }
+
+.tabs { display: flex; overflow-x: auto; gap: 2px; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.tab-btn { padding: 4px 7px; border-radius: 12px; font-size: 8px; font-weight: 600; white-space: nowrap; cursor: pointer; background: transparent; border: 1px solid transparent; color: rgba(255,255,255,0.45); }
+.tab-btn.active { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; }
+
+.content { padding: 16px; max-width: 900px; margin: 0 auto; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.card { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07); border-left: 3px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+.card h3 { font-size: 12px; font-weight: 700; color: #f59e0b; margin-bottom: 8px; }
+.card p { font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.85; }
+
+.planet-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); width: 100%; max-width: 340px; aspect-ratio: 1; gap: 2px; margin: 16px auto; }
+.planet-cell { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07); border-radius: 5px; padding: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; }
+.planet-cell.lagna { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.4); }
+.planet-cell.center { background: rgba(245,158,11,0.04); }
+
+.planet-list { margin-top: 14px; }
+.planet-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 10px; }
+.planet-name { color: #f0ece4; font-weight: 600; width: 30%; }
+.planet-rashi { color: rgba(255,255,255,0.45); width: 18%; }
+.planet-nak { color: #22d3ee; width: 22%; font-size: 9px; }
+.planet-house { color: #f59e0b; width: 8%; }
+.planet-dignity { font-size: 7px; font-weight: 700; width: 15%; text-align: right; }
+
+.meter { margin-bottom: 8px; }
+.meter-label { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; }
+.meter-label-name { color: rgba(255,255,255,0.45); }
+.meter-bar { height: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.meter-fill { height: 100%; background: linear-gradient(90deg, #4ade8088, #4ade80); border-radius: 3px; }
+
+.footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.07); text-align: center; font-size: 7px; color: rgba(255,255,255,0.15); }
+
+.exalted { color: #4ade80; }
+.debilitated { color: #f87171; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="font-size: 40px; margin-bottom: 8px;">🕉️</div>
+  <h1>Jyotish AI</h1>
+  <p>திருக்கணித ஜாதகம்</p>
+  <p style="margin-top: 6px;">April 21, 1997 • 5:30 AM • Pudukkottai • Male</p>
+  <div class="tags">
+    <span class="tag">Meena Lagna</span>
+    <span class="tag">Hasta Moon</span>
+    <span class="tag">Sun Exalted ↑</span>
+    <span class="tag">Jupiter Debilitated ↓</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('chart')">📐 Chart</button>
+  <button class="tab-btn" onclick="switchTab('personality')">🧬 Personality</button>
+  <button class="tab-btn" onclick="switchTab('shadow')">🌑 Shadow Self</button>
+  <button class="tab-btn" onclick="switchTab('past5')">⏪ Past 5 Years</button>
+  <button class="tab-btn" onclick="switchTab('career')">💼 Career</button>
+  <button class="tab-btn" onclick="switchTab('marriage')">💍 Marriage</button>
+  <button class="tab-btn" onclick="switchTab('wealth')">💰 Wealth</button>
+  <button class="tab-btn" onclick="switchTab('health')">🏥 Health</button>
+  <button class="tab-btn" onclick="switchTab('future')">🔮 What's Next</button>
+</div>
+
+<div class="content">
+
+<div id="chart" class="tab-pane active">
+  <div class="card">
+    <h3>Birth Chart — South Indian Rashi Kattam</h3>
+    <p><strong>Lagna:</strong> Meena (Pisces) — Revati Nakshatra<br>
+    <strong>Moon:</strong> Kanya (Virgo) — Hasta Pada 2<br>
+    <strong>Atmakaraka:</strong> Jupiter | <strong>Current Dasha:</strong> Rahu (until Nov 2027)</p>
+  </div>
+
+  <div class="planet-grid" id="chart-grid"></div>
+
+  <div class="planet-list">
+    <div class="planet-item" style="font-weight: 700; color: #f59e0b; margin-bottom: 8px;">
+      <div class="planet-name">Planet</div>
+      <div class="planet-rashi">Rashi</div>
+      <div class="planet-nak">Nakshatra</div>
+      <div class="planet-house">H</div>
+      <div class="planet-dignity">Dignity</div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Surya (Sun)</div>
+      <div class="planet-rashi">Mesha</div>
+      <div class="planet-nak">Ashwini P3</div>
+      <div class="planet-house">H2</div>
+      <div class="planet-dignity exalted">EXALTED</div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Chandra (Moon)</div>
+      <div class="planet-rashi">Kanya</div>
+      <div class="planet-nak">Hasta P2</div>
+      <div class="planet-house">H7</div>
+      <div class="planet-dignity"></div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Mangal (Mars)</div>
+      <div class="planet-rashi">Simha</div>
+      <div class="planet-nak">P.Phalguni P3</div>
+      <div class="planet-house">H6</div>
+      <div class="planet-dignity"></div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Budha (Mercury)</div>
+      <div class="planet-rashi">Mesha</div>
+      <div class="planet-nak">Bharani P1</div>
+      <div class="planet-house">H2</div>
+      <div class="planet-dignity"></div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Guru (Jupiter)</div>
+      <div class="planet-rashi">Makara</div>
+      <div class="planet-nak">Dhanishta P1</div>
+      <div class="planet-house">H11</div>
+      <div class="planet-dignity debilitated">DEBIL.</div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Shukra (Venus)</div>
+      <div class="planet-rashi">Mesha</div>
+      <div class="planet-nak">Ashwini P4</div>
+      <div class="planet-house">H2</div>
+      <div class="planet-dignity"></div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Shani (Saturn)</div>
+      <div class="planet-rashi">Meena</div>
+      <div class="planet-nak">Revati P1</div>
+      <div class="planet-house">H1</div>
+      <div class="planet-dignity"></div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Rahu</div>
+      <div class="planet-rashi">Kanya</div>
+      <div class="planet-nak">U.Phalguni P3</div>
+      <div class="planet-house">H7</div>
+      <div class="planet-dignity"></div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-name">Ketu</div>
+      <div class="planet-rashi">Meena</div>
+      <div class="planet-nak">U.Bhadra P1</div>
+      <div class="planet-house">H1</div>
+      <div class="planet-dignity"></div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left-color: #4ade80;">
+    <h3 style="color: #4ade80;">★ Yogas Detected</h3>
+    <p><strong>Sun EXALTED in Aries (H2)</strong> — Exceptional willpower and authority. Strongest Sun placement possible.<br><br>
+    <strong>Budhaditya Yoga</strong> — Sun+Mercury in H2: sharp intellect, commanding speech.<br><br>
+    <strong>Mars in 6th</strong> — Defeats enemies, overcomes obstacles, strong immunity.<br><br>
+    <strong>Jupiter Debilitated</strong> — Lagna lord weakened. Self-confidence issues. Gains require extra effort.</p>
+  </div>
+</div>
+
+<div id="personality" class="tab-pane">
+  <div class="card">
+    <h3>The Core Duality — Soft Outside, Fire Inside</h3>
+    <p><strong>Pisces Lagna with Saturn + Ketu on it</strong> gives the world a gentle, compassionate, spiritually-inclined person. He appears older than his age, serious, and naturally caring. People sense wisdom and a slight emotional distance. First impression: "he's a nice guy, soft-spoken, someone you can trust."</p>
+    <p style="margin-top: 8px;">But underneath, the <strong style="color: #4ade80;">Sun is EXALTED in Aries</strong> — the inner core is a fierce, authoritative warrior with real ambition. Soft outside, fire inside.</p>
+  </div>
+
+  <div class="card">
+    <h3>Revati Rising — The Final Star</h3>
+    <p>Revati is the 27th and final nakshatra — ruled by Pushan, the shepherd god. This nakshatra is associated with <strong>healing, nurturing, completion, and safe journeys</strong>. He is instinctively drawn to caring for others, fixing broken things, and making sure people around him are okay.</p>
+  </div>
+
+  <div class="card">
+    <h3>Moon in Virgo (Hasta) — The Analyzing Mind</h3>
+    <p>Hasta means <strong>"the hand"</strong> — extraordinary skill, detail-oriented precision, and craftsmanship. His mind is <strong>analytical, perfectionist, and service-oriented</strong>. He doesn't just feel emotions — he dissects them, examines them, tries to understand WHY.</p>
+    <p style="margin-top: 8px;"><strong>Virgo Moon in the 7th house</strong> means his emotional identity is completely tied to relationships. When partnerships are good, he feels good. When they're troubled, his entire sense of self destabilizes.</p>
+  </div>
+
+  <div class="card">
+    <h3>Personality Meters</h3>
+    <div class="meter">
+      <div class="meter-label"><span class="meter-label-name">Outer Gentleness (Pisces mask)</span><span style="color: #60a5fa;">85%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width: 85%; background: linear-gradient(90deg, #60a5fa88, #60a5fa);"></div></div>
+    </div>
+    <div class="meter">
+      <div class="meter-label"><span class="meter-label-name">Inner Ambition (Exalted Sun)</span><span style="color: #4ade80;">82%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width: 82%; background: linear-gradient(90deg, #4ade8088, #4ade80);"></div></div>
+    </div>
+    <div class="meter">
+      <div class="meter-label"><span class="meter-label-name">Emotional Dependency (Moon-Rahu H7)</span><span style="color: #f87171;">88%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width: 88%; background: linear-gradient(90deg, #f8717188, #f87171);"></div></div>
+    </div>
+    <div class="meter">
+      <div class="meter-label"><span class="meter-label-name">Self-Confidence (Jupiter debilitated)</span><span style="color: #f87171;">38%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width: 38%; background: linear-gradient(90deg, #f8717188, #f87171);"></div></div>
+    </div>
+    <div class="meter">
+      <div class="meter-label"><span class="meter-label-name">Resilience Under Pressure</span><span style="color: #4ade80;">80%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width: 80%; background: linear-gradient(90deg, #4ade8088, #4ade80);"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="shadow" class="tab-pane">
+  <div class="card">
+    <h3 style="color: #f87171;">🌑 The Shadows — What He Won't Tell You</h3>
+    <p>Every chart has darkness. This one has specific, identifiable patterns that operate beneath conscious awareness. These aren't flaws to be ashamed of — they're blind spots that control behavior until made conscious.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f87171;">1. The Confidence Wound</h3>
+    <p><span class="tag" style="background: rgba(248,113,113,0.15); color: #f87171;">JUPITER DEBILITATED — LAGNA LORD + ATMAKARAKA</span></p>
+    <p style="margin-top: 6px;"><strong>Jupiter is both the Lagna lord (identity) AND the Atmakaraka (soul significator). And it's debilitated.</strong> This is the deepest wound in the chart. He does not trust himself. He second-guesses every major decision. His gut instinct is sharp (exalted Sun + Hasta Moon), but his debilitated Jupiter refuses to trust it.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f472b6;">2. The Relationship Obsession</h3>
+    <p><strong>Moon + Rahu in 7th House</strong> — His emotional world orbits around relationships. Not in a romantic way — in an anxious way. He reads into every word, every silence, every delayed reply. When in a relationship, his entire identity merges with the other person.</p>
+  </div>
+
+  <div class="card">
+    <h3>3. The Hidden Ego</h3>
+    <p><strong>Exalted Sun behind Pisces mask</strong> — He WANTS power, recognition, and status — but the Pisces-Saturn-Ketu exterior won't let him show it openly. So he pursues ambition through indirect channels. This isn't hypocrisy — he genuinely cares. But the exalted Sun's ego is equally real and equally driving decisions.</p>
+  </div>
+
+  <div class="card">
+    <h3>4. Saturn's Heaviness — The Early Burden</h3>
+    <p><strong>Saturn + Ketu on Lagna</strong> — He grew up fast. Whether through family responsibility, health issues, or emotional isolation — childhood wasn't carefree. He became the "mature one" before he was ready.</p>
+  </div>
+</div>
+
+<div id="past5" class="tab-pane">
+  <div class="card">
+    <h3>⏪ PAST 5 YEARS (2021–2026) — What Happened</h3>
+    <p>The entire past 5 years falls within <strong>Rahu Mahadasha</strong> (Nov 2009 – Nov 2027). Rahu is in the 7th house with Moon — meaning this entire 18-year period is relationship-and-partnership-dominated.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f472b6;">May 2021 – May 2024: Rahu-Venus (3 Years)</h3>
+    <p><span class="tag" style="background: rgba(244,114,182,0.15); color: #f472b6;">ROMANCE · MONEY · INTENSE CONNECTIONS</span></p>
+    <p style="margin-top: 6px;">Venus sits in the 2nd house (Aries). Rahu amplifying Venus during a period where Rahu is natally in the 7th house = this 3-year window was almost certainly <strong>dominated by a significant relationship or romantic chapter</strong>. Someone entered his life who consumed his emotional attention entirely.</p>
+    <p style="margin-top: 6px;">Financially, this was a period of <strong>fluctuating income</strong> — money came in bursts but left just as fast.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #4ade80;">May 2024 – April 2025: Rahu-Sun (11 Months)</h3>
+    <p><span class="tag" style="background: rgba(74,222,128,0.15); color: #4ade80;">RECOGNITION · CONFIDENCE · EGO SURGE</span></p>
+    <p style="margin-top: 6px;">Sun is EXALTED in his 2nd house. When the strongest planet in the chart activates, it creates a burst of <strong>authority, recognition, and confidence</strong>. This was likely a period where he passed an important milestone or received recognition.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f87171;">April 2025 – October 2026: Rahu-Moon (CURRENT)</h3>
+    <p><span class="tag" style="background: rgba(248,113,113,0.15); color: #f87171;">EMOTIONAL INTENSITY · RELATIONSHIP CRISIS · ANXIETY</span></p>
+    <p style="margin-top: 6px;">This is the most <strong>emotionally vulnerable window in years</strong>. Moon is in the 7th house WITH Rahu natally. Partnership/relationship matters are consuming almost all emotional bandwidth.</p>
+    <p style="margin-top: 6px;">If there's a relationship situation happening right now — an active relationship in crisis, confusion about a partner, or someone who keeps appearing and disappearing — this Dasha combination is exactly why.</p>
+  </div>
+</div>
+
+<div id="career" class="tab-pane">
+  <div class="card">
+    <h3>Career DNA</h3>
+    <p><strong>10th house is Dhanus (Sagittarius), lord Jupiter in 11th (debilitated).</strong> Career connects to education, philosophy, healing, travel, law, consulting, or international work. Jupiter as 10th lord in 11th is structurally good, but debilitation means professional success requires extraordinary persistence.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #4ade80;">The 2nd House Power</h3>
+    <p>Three planets in the wealth house = <strong>his voice and communication are his most powerful career tools</strong>. Exalted Sun gives commanding authority. Mercury adds intellectual precision. Venus adds charm and aesthetic sense. Any career requiring persuasion, teaching, or client-facing interaction benefits enormously.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f87171;">Mars in 6th — The Competitor</h3>
+    <p>Mars in the house of enemies and service = <strong>he excels in competitive environments, overcomes obstacles that stop others</strong>. When his back is against the wall, he doesn't collapse — he fights harder.</p>
+  </div>
+</div>
+
+<div id="marriage" class="tab-pane">
+  <div class="card">
+    <h3 style="color: #f472b6;">7th House — The Storm Center</h3>
+    <p><strong>Moon + Rahu together in the 7th house (Virgo)</strong> is the defining marriage signature. Relationships are emotionally intense, magnetically attractive, and inherently turbulent. He doesn't do casual connections — every relationship feels like destiny.</p>
+  </div>
+
+  <div class="card">
+    <h3>Partner Profile</h3>
+    <p><strong>7th house sign: Kanya (Virgo)</strong> — the partner is intelligent, detail-oriented, analytical, possibly health-conscious or in a service-oriented profession.</p>
+    <p style="margin-top: 6px;"><strong>7th lord Mercury in 2nd house</strong> — the partner is well-spoken, attractive, financially aware, and has a strong sense of self-worth.</p>
+  </div>
+
+  <div class="card">
+    <h3>Love vs Arranged</h3>
+    <p><strong>5th lord Moon in the 7th house</strong> = love converts to marriage. He falls in love first, then marries. But Moon-Rahu makes the love path complicated.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #4ade80;">Marriage Timing</h3>
+    <p><strong>Current Rahu-Moon period (until Oct 2026)</strong> is the most emotionally charged relationship window — but NOT the best time for marriage decisions. Too much Rahu fog.</p>
+    <p style="margin-top: 6px;"><strong style="color: #4ade80;">Best marriage window: 2028-2029</strong> during early Jupiter Mahadasha when the Lagna lord stabilizes emotions.</p>
+  </div>
+</div>
+
+<div id="wealth" class="tab-pane">
+  <div class="card">
+    <h3 style="color: #4ade80;">Exceptional Wealth Potential</h3>
+    <p><strong>Three planets in the 2nd house — Sun EXALTED + Mercury + Venus — in Aries</strong> is one of the strongest wealth combinations in Vedic astrology. The earning potential is genuinely high. Authority, communication skills, and aesthetic sense all convert into income.</p>
+  </div>
+
+  <div class="card">
+    <h3>Income Pattern</h3>
+    <p><strong>Jupiter in 11th house (gains)</strong> — despite debilitation, the Lagna lord in the income house connects identity directly to earning. Self-employment or entrepreneurship will eventually outperform salaried work.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f87171;">Financial Shadow</h3>
+    <p>Venus in Aries in 2nd = <strong>impulsive spending, especially on people he loves</strong>. Generous to a fault. Pisces Lagna adds financial impracticality — compassion can lead to financial loss through lending or giving.</p>
+  </div>
+</div>
+
+<div id="health" class="tab-pane">
+  <div class="card">
+    <h3 style="color: #f87171;">Saturn + Ketu on Lagna — Primary Concern</h3>
+    <p>Saturn directly on the 1st house (body) can bring: <strong>bone, joint, and knee issues (especially after 30), dental problems, skin dryness, lower back pain</strong>. Ketu adds unexplained symptoms and psychosomatic patterns.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f472b6;">Mental Health — Non-Negotiable Attention Needed</h3>
+    <p><strong>Moon + Rahu in 7th</strong> is the primary mental health concern. Anxiety, racing thoughts, sleep disturbances, and emotional turbulence are built into the chart's wiring. During the current Rahu-Moon period (until Oct 2026), these symptoms are at their peak intensity.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #4ade80;">Strengths</h3>
+    <p><strong>Mars in 6th house</strong> = strong disease-fighting ability, quick recovery, and powerful immunity when physically active. This is the saving grace. Regular exercise dramatically improves both physical and mental health.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #60a5fa;">Recommendations</h3>
+    <p>Exercise 4x/week minimum — Mars in 6th NEEDS a physical outlet. Bone and joint care after 28 (calcium, vitamin D). Avoid alcohol and self-medication. Sleep hygiene is critical — Moon-Rahu disturbs sleep.</p>
+  </div>
+</div>
+
+<div id="future" class="tab-pane">
+  <div class="card">
+    <h3>🔮 WHAT'S COMING</h3>
+    <p><strong>The next 18 months are a bridge between two life chapters.</strong> Rahu Mahadasha ends November 2027. Jupiter Mahadasha begins. Everything changes.</p>
+  </div>
+
+  <div class="card">
+    <h3>Now – Oct 2026: Rahu-Moon (Current) — 55/100</h3>
+    <p>The most emotionally intense phase. Relationship matters dominate. Anxiety peaks. Sleep struggles. The lesson: can you exist without defining yourself through another person? Endure this — it ends October 2026 and doesn't come back.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #4ade80;">Oct 2026 – Nov 2027: Rahu-Mars — 72/100</h3>
+    <p>Energy returns. Mars in 6th activates — competition, career push, physical vitality. The emotional fog lifts and action replaces anxiety. Career moves made here have teeth.</p>
+  </div>
+
+  <div class="card">
+    <h3>Nov 2027 – Dec 2029: Jupiter-Jupiter (New Chapter) — 65/100</h3>
+    <p>The Lagna lord begins its 16-year reign. The first 2 years feel slow — Jupiter debilitated means the new chapter starts with uncertainty. But foundations being laid here determine everything for the next decade.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #60a5fa;">2030 – 2032: Jupiter Matures — 72/100</h3>
+    <p>Sub-periods of stronger planets begin. Career establishment accelerates. Wealth grows steadily. By 32-35, this person is recognized and respected in their field.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="color: #f59e0b;">The One Truth This Chart Keeps Repeating</h3>
+    <p>Every layer says the same thing: <strong style="color: #f59e0b;">stop looking for yourself in other people.</strong> Moon-Rahu in 7th seeks identity through relationships. Debilitated Jupiter seeks validation through external approval. But the <strong style="color: #4ade80;">exalted Sun in the 2nd house says the truth is the opposite — your power is already inside you, fully formed, waiting to be claimed.</strong></p>
+    <p style="margin-top: 8px;">The moment you stop asking "do they love me, do they approve of me" and start saying "I know my value" — that exalted Sun ignites. And nothing in the zodiac burns brighter than an exalted Sun that finally believes in itself.</p>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  Jyotish AI • Thirukkanitha Method • Lahiri Ayanamsa • Classical Parashari + Jaimini Analysis • Brutally Honest Edition
+</div>
+
+<script>
+function switchTab(tabName) {
+  // Hide all tabs
+  const panes = document.querySelectorAll('.tab-pane');
+  panes.forEach(pane => pane.classList.remove('active'));
+  
+  // Remove active class from all buttons
+  const buttons = document.querySelectorAll('.tab-btn');
+  buttons.forEach(btn => btn.classList.remove('active'));
+  
+  // Show selected tab
+  document.getElementById(tabName).classList.add('active');
+  
+  // Add active class to clicked button
+  event.target.classList.add('active');
+}
+
+// Initialize chart grid on load
+window.addEventListener('load', function() {
+  const rashis = ['Mesha','Vrishabha','Mithuna','Kataka','Simha','Kanya','Thulam','Vrischika','Dhanus','Makara','Kumbha','Meena'];
+  const houseOrder = [12,1,2,3,4,5,6,7,8,9,10,11];
+  const gridPos = [[0,0],[0,1],[0,2],[0,3],[1,0],[1,3],[2,0],[2,3],[3,0],[3,1],[3,2],[3,3]];
+  const lagnaRashi = 11;
+  const planetsByHouse = {
+    1: ['Saturn','Ketu'],
+    2: ['Sun','Mercury','Venus'],
+    6: ['Mars'],
+    7: ['Moon','Rahu'],
+    11: ['Jupiter']
+  };
+  
+  const grid = document.getElementById('chart-grid');
+  gridPos.forEach((pos, i) => {
+    const house = houseOrder[i];
+    const rashiIdx = (lagnaRashi + house - 1) % 12;
+    const isLagna = house === 1;
+    const planets = planetsByHouse[house] || [];
+    
+    const cell = document.createElement('div');
+    cell.className = isLagna ? 'planet-cell lagna' : (i === 5 || i === 10) ? 'planet-cell center' : 'planet-cell';
+    cell.style.gridRow = pos[0] + 1;
+    cell.style.gridColumn = pos[1] + 1;
+    
+    let html = `<div style="color: #f59e0b; font-weight: 700; font-size: 8px;">${rashis[rashiIdx]}</div>`;
+    html += `<div style="color: rgba(255,255,255,0.45); font-size: 7px;">H${house}</div>`;
+    if (planets.length > 0) {
+      html += `<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; margin-top: 1px;">`;
+      planets.forEach(p => {
+        html += `<span style="background: rgba(34,211,238,0.12); color: #22d3ee; padding: 0 3px; border-radius: 2px; font-size: 7px; font-weight: 600;">${p.substring(0,3)}</span>`;
+      });
+      html += `</div>`;
+    }
+    cell.innerHTML = html;
+    grid.appendChild(cell);
+  });
+});
+</script>
+
+</body>
+</html>
